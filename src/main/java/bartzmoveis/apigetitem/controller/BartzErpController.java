@@ -53,4 +53,28 @@ public class BartzErpController {
         }
         return ResponseEntity.status(404).body("Item não encontrado");
     }
+
+        // NOVO: Busca parcial por código
+    // URL: /api/erp/search-code?q=10.01
+    @GetMapping("/search-code")
+    public ResponseEntity<List<BartzErpDB>> searchByCode(@RequestParam("q") String query) {
+        List<BartzErpDB> results = service.searchByCode(query);
+        
+        if (results.isEmpty()) {
+            return ResponseEntity.noContent().build(); // Retorna 204 se não achar nada
+        }
+        return ResponseEntity.ok(results);
+    }
+
+    // NOVO: Busca parcial por descrição
+    // URL: /api/erp/search-desc?q=branco
+    @GetMapping("/search-desc")
+    public ResponseEntity<List<BartzErpDB>> searchByDescription(@RequestParam("q") String query) {
+        List<BartzErpDB> results = service.searchByDescription(query);
+        
+        if (results.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(results);
+    }
 }

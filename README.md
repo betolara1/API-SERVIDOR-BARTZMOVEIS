@@ -34,16 +34,24 @@ A API expõe o recurso `/api/erp` para consulta de itens:
 | Método | Endpoint | Descrição | Parâmetros |
 | :--- | :--- | :--- | :--- |
 | **GET** | `/api/erp` | Lista todos os itens cadastrados. | - |
-| **GET** | `/api/erp/find-by-code` | Busca um item específico pelo código. | `code` (String) |
-| **GET** | `/api/erp/find-by-description` | Busca um item específico pela descrição. | `desc` (String) |
+| **GET** | `/api/erp/find-by-code` | Busca um item específico pelo código exato. | `code` (String) |
+| **GET** | `/api/erp/find-by-description` | Busca um item específico pela descrição exata. | `desc` (String) |
+| **GET** | `/api/erp/search-code` | Busca parcial por código (contém). | `q` (String) |
+| **GET** | `/api/erp/search-desc` | Busca parcial por descrição (contém). | `q` (String) |
 
 ### Exemplos de Requisição
 
-- **Buscar por Código:**
+- **Buscar por Código (Exato):**
   `GET http://localhost:8080/api/erp/find-by-code?code=12345`
 
-- **Buscar por Descrição:**
+- **Buscar por Descrição (Exato):**
   `GET http://localhost:8080/api/erp/find-by-description?desc=armario`
+
+- **Busca Parcial por Código:**
+  `GET http://localhost:8080/api/erp/search-code?q=10.01`
+
+- **Busca Parcial por Descrição:**
+  `GET http://localhost:8080/api/erp/search-desc?q=branco`
 
 ---
 

@@ -30,4 +30,16 @@ public class BartzErpService {
     public Optional<BartzErpDB> findByDescriptionItem(String desc) {
         return repository.findByDescription(desc);
     }
+
+    // --- NOVOS MÉTODOS DE BUSCA PARCIAL ---
+    @Transactional(readOnly = true)
+    public List<BartzErpDB> searchByDescription(String partialDesc) {
+        // O método Containing já faz o %like%, mas podemos forçar UpperCase pra ignorar maiuscula/minuscula se o banco permitir
+        return repository.findByDescriptionContaining(partialDesc);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BartzErpDB> searchByCode(String partialCode) {
+        return repository.searchByPartCode(partialCode);
+    }
 }
