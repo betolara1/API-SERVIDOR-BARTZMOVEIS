@@ -44,9 +44,9 @@ Esta API fornece uma interface segura e eficiente para consultas de itens e prod
 ```mermaid
 flowchart TB
   subgraph Application
-    A[BartzErpController] --> B[BartzErpService]
-    B --> C[BartzErpRepository (JPA)]
-    C --> D[IBM DB2 Database]
+    A["BartzErpController"] --> B["BartzErpService"]
+    B --> C["BartzErpRepository (JPA)"]
+    C --> D["IBM DB2 Database"]
   end
 ```
 
