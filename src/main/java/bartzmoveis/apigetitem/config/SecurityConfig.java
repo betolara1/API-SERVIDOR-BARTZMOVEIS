@@ -24,13 +24,27 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, ApiKeyProperties apiKeyProperties) throws Exception {
-        
+
         ApiKeyFilter apiKeyFilter = new ApiKeyFilter(apiKeyProperties.getKey());
-        
-        http.csrf(csrf -> csrf.disable())// Desabilita CSRF para APIs REST
+
+        http.csrf(csrf -> csrf.disable()) // Desabilita CSRF para APIs REST
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
-            .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class); // Adiciona o filtro de chave API antes do filtro de autenticação padrão
+            .authorizeHttpRequests(auth -> auth
+                // Permitir acesso público à documentação e recursos estáticos do Swagger/OpenAPI
+                .requestMatchers(
+                    "/v3/api-docs/**",
+                    "/v3/api-docs",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/webjars/**",
+                    "/actuator/**"
+                ).permitAll()
+                // Qualquer outra requisição exige autenticação
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class); // Adiciona o filtro de
+                                                    // chave API antes do filtro
+                                                    // de autenticação padrão
 
         return http.build();
     }

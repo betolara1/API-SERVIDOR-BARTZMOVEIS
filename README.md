@@ -457,6 +457,18 @@ apigetitem/
 - **Swagger UI:** [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)
 - **OpenAPI JSON:** [http://localhost:8081/v3/api-docs](http://localhost:8081/v3/api-docs)
 
+### Swagger UI (screenshot)
+
+Para facilitar a visualização dos campos e schemas, adicione um screenshot do Swagger UI neste repositório e ele será exibido abaixo.
+
+Coloque a imagem em: `images/swagger-ui.png` (crie a pasta `images/` na raiz do projeto se não existir).
+
+Exemplo de referência (substitua a imagem quando fizer o upload):
+
+![Swagger UI - API Bartz Móveis](images/swagger.png)
+
+Se preferir, use outro nome/locação e atualize o caminho acima. A imagem ajuda recrutadores a ver rapidamente os endpoints e os schemas mesmo sem abrir a aplicação.
+
 ---
 
 ## 📄 Estrutura de Dados
