@@ -74,8 +74,8 @@ sequenceDiagram
 
 | Categoria | Tecnologia | Versão | Propósito |
 |-----------|-----------|--------|----------|
-| **Runtime** | Java | 21 LTS | Linguagem principal |
-| **Framework** | Spring Boot | 4.0.2 | Framework web |
+| **Runtime** | Java | 17 LTS | Linguagem principal |
+| **Framework** | Spring Boot | 3.4.2 | Framework web |
 | **ORM** | Spring Data JPA / Hibernate | 6.4.x | Mapeamento relacional |
 | **Segurança** | Spring Security | 6.2.x | Autenticação e autorização |
 | **Banco de Dados** | IBM DB2 | 12.1.3.0 | Database corporativa |
@@ -253,7 +253,7 @@ springdoc.swagger-ui.path=/swagger-ui.html
 
 ### Pré-requisitos
 
-- **Java 21 LTS** ou superior
+- **Java 17 LTS** ou superior
 - **Maven 3.9+**
 - **IBM DB2** configurado e acessível
 - **Variáveis de ambiente** definidas
@@ -477,6 +477,18 @@ A API mapeia a tabela `ITEM` com os seguintes atributos principais:
 - `codeItem`: Código único do item.
 - `description`: Descrição detalhada do produto.
 - `refComercial`: Referência comercial do item.
+
+## 🆘 Solução de Problemas
+
+### Erro: `PlaceholderResolutionException: Could not resolve placeholder 'API_KEY'`
+
+Este erro ocorre quando o Spring Boot não consegue encontrar o arquivo `.env` ou a variável `API_KEY`.
+
+**Como resolver:**
+1. **Verifique o Arquivo:** Certifique-se de que o arquivo `.env` está na **mesma pasta** que o arquivo `api-bartz.jar`.
+2. **Localização no Servidor:** Se você moveu o `.jar` para `C:\API`, você **deve** copiar o arquivo `.env` para `C:\API` também.
+3. **Conteúdo do .env:** Verifique se o arquivo contém a linha `API_KEY=sua_chave_aqui` sem espaços em volta do `=`.
+4. **Permissões:** Garanta que o usuário que executa o comando `java -jar` tem permissão de leitura para o arquivo `.env`.
 
 ---
 
