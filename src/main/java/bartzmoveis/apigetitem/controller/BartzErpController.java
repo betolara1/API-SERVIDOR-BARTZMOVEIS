@@ -17,6 +17,7 @@ import bartzmoveis.apigetitem.model.BartzErpDB;
 import bartzmoveis.apigetitem.repository.BartzErpRepository;
 import bartzmoveis.apigetitem.service.BartzErpService;
 
+
 // Esta classe é o controlador REST para a entidade BartzErpDB, responsável por expor os 
 // endpoints da API e lidar com as requisições HTTP
 @RestController
@@ -47,7 +48,7 @@ public class BartzErpController {
     // 2. Buscar por código usando GET (Query Parameter)
     // A URL será: /api/erp/find-by-code?code=12345
     @GetMapping("/find-by-code") 
-    public ResponseEntity<?> findByCodeItem(@RequestParam("code") String code) {
+    public ResponseEntity<?> findByCodeItem(@RequestParam("q") String code) {
         
         Optional<BartzErpDB> erpOpt = service.findByCodeItem(code);
 
@@ -60,7 +61,7 @@ public class BartzErpController {
     // 3. Buscar por descrição usando GET
     // A URL será: /api/erp/find-by-description?desc=armario
     @GetMapping("/find-by-description")
-    public ResponseEntity<?> findByDescriptionItem(@RequestParam("desc") String desc) {
+    public ResponseEntity<?> findByDescriptionItem(@RequestParam("q") String desc) {
         
         Optional<BartzErpDB> erpOpt = service.findByDescriptionItem(desc);
 
