@@ -4,29 +4,45 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import bartzmoveis.apigetitem.model.BartzErpDB;
+import bartzmoveis.apigetitem.repository.BartzErpRepository;
 import bartzmoveis.apigetitem.service.BartzErpService;
 
+// Esta classe é o controlador REST para a entidade BartzErpDB, responsável por expor os 
+// endpoints da API e lidar com as requisições HTTP
 @RestController
+
+// O @RequestMapping define a rota base para todos os endpoints deste controlador, ou seja,
+// todos os endpoints começarão com /api/erp
 @RequestMapping("/api/erp")
-@CrossOrigin(origins = "*") 
+
+// O @CrossOrigin é usado para permitir requisições de origens específicas, como o frontend
+// rodando em localhost ou um arquivo local
+@CrossOrigin(origins = {"http://192.168.1.10:50000", "http://localhost:5173", "file://"})
 public class BartzErpController {
 
     @Autowired
     private BartzErpService service;
+    @Autowired
+    private BartzErpRepository repository;
 
-    // 1. Listar tudo continua igual
+    // O método listAll() é mapeado para o endpoint GET /api/erp, e retorna uma página de itens do banco
+    // O Pageable é um objeto que contém informações sobre a página solicitada (número, tamanho, ordenação), 
+    // e o Spring Data JPA cuida de paginar os resultados automaticamente
     @GetMapping
-    public List<BartzErpDB> listAll() {
-        return service.listAll();
+    public Page<BartzErpDB> listAll(Pageable pageable) {
+        return repository.findAll(pageable);
     }
+
 
     // 2. Buscar por código usando GET (Query Parameter)
     // A URL será: /api/erp/find-by-code?code=12345
@@ -54,7 +70,8 @@ public class BartzErpController {
         return ResponseEntity.status(404).body("Item não encontrado");
     }
 
-        // NOVO: Busca parcial por código
+    
+    // NOVO: Busca parcial por código
     // URL: /api/erp/search-code?q=10.01
     @GetMapping("/search-code")
     public ResponseEntity<List<BartzErpDB>> searchByCode(@RequestParam("q") String query) {
@@ -65,6 +82,7 @@ public class BartzErpController {
         }
         return ResponseEntity.ok(results);
     }
+
 
     // NOVO: Busca parcial por descrição
     // URL: /api/erp/search-desc?q=branco
