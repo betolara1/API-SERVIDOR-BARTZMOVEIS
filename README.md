@@ -507,7 +507,7 @@ Este erro ocorre quando o Spring Boot não consegue encontrar o arquivo `.env` o
 
 ## 👨‍💻 Autor
 
-**Ralf** – Desenvolvedor Full Stack | Java | Spring Boot
+**Roberto Lara** – Desenvolvedor Full Stack | Java | Spring Boot
 
 ---
 
