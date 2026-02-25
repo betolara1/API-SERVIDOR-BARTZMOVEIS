@@ -21,19 +21,18 @@ Uma API REST robusta e segura desenvolvida em **Spring Boot** para consultas de 
 
 ---
 
-## 🎯 Visão Geral
+## 🎯 Objetivo e Problema Resolvido
 
-Esta API fornece uma interface segura e eficiente para consultas de itens e produtos no banco de dados IBM DB2 da Bartz Móveis. O projeto implementa padrões empresariais como **autenticação via API Key**, **tratamento global de exceções**, **configuração via variáveis de ambiente** e **documentação automática com Swagger**.
+**O Problema**: A Bartz Móveis possui um sistema ERP legado ancorado em um banco de dados IBM DB2. O acesso direto a essa base de dados dificulta a integração com novos front-ends, relatórios modernos ou aplicações de parceiros, além de expor as credenciais do banco de dados na rede se não houver um middleware apropriado.
 
-**Principais características:**
-- ✅ Autenticação por API Key (header `X-API-KEY`)
-- ✅ Configuração segura via variáveis de ambiente
-- ✅ Tratamento centralizado de exceções
-- ✅ Documentação interativa com Swagger/OpenAPI
-- ✅ Validação de requisições
-- ✅ Suporte a paginação
-- ✅ CORS configurado para múltiplas origens
-- ✅ Logging estruturado
+**A Solução**: Esta API REST foi concebida para atuar como uma **Camada Anticorrupção (Ponte)**. Ela encapsula todo o acesso nativo e restrito do IBM DB2 entregando, em troca, serviços RESTful modernos e padronizados no formato JSON, de forma rápida, eficiente e altamente flexível (paginação, filtros).
+
+**Principais características e ganhos:**
+- ✅ **Segurança Apurada**: Autenticação por API Key (header `X-API-KEY`) em vez de dados acoplados do banco de dados.
+- ✅ **Clean Code & Boas Práticas**: Validação de requisições, tratamento centralizado de exceções (GlobalExceptionHandler) e configuração via variáveis de ambiente.
+- ✅ **Developer Experience (DX)**: Documentação interativa embarcada com Swagger/OpenAPI v3.
+- ✅ **Alta Performance**: Paginação nativa e queries otimizadas pelo Spring Data.
+- ✅ **Pronto para Nuvem (Cloud-Ready)**: Aplicação configurada para contêinerização (Docker) e com CI/CD estruturado.
 
 ---
 
@@ -249,37 +248,34 @@ springdoc.swagger-ui.path=/swagger-ui.html
 
 ---
 
-## 🚀 Como Executar
+## 🚀 Como Executar (Dev / Prod)
 
-### Pré-requisitos
+A API foi estruturada para ser facilmente rodada tanto no ambiente iterativo de desenvolvedor quanto como um serviço empacotado para homologação/produção.
 
-- **Java 17 LTS** ou superior
-- **Maven 3.9+**
+### Pré-requisitos Gerais
+
 - **IBM DB2** configurado e acessível
-- **Variáveis de ambiente** definidas
+- **Git**
 
-### Instalação e Setup
+---
 
-#### 1. Clone e Navegue
+### 💻 Ambiente de Desenvolvimento (Local)
+
+**Requisitos Específicos:** Java 17 LTS e Maven 3.9+
+
+#### 1. Clone o repositório
 
 ```bash
 git clone <url-do-repositorio>
 cd apigetitem
 ```
 
-#### 2. Configure as Variáveis de Ambiente
+#### 2. Configure as Variáveis de Ambiente (.env)
 
-**No Windows (PowerShell):**
-```powershell
-$env:API_KEY="suaapikey"
-$env:DB_URL="jdbc:db2://localhost:50000/nomedobanco"
-$env:DB_USERNAME="admin"
-$env:DB_PASSWORD="senha123"
-```
+Usamos a estratégia Spring Config Import para injetar automaticamente na aplicação todas as propriedades via `.env`. Crie e preencha um arquivo `.env` na raiz do projeto:
 
-**Ou via `.env` (desenvolvimento local):**
 ```dotenv
-API_KEY=suaapikey
+API_KEY=sua_chave_secreta_aqui
 DB_URL=jdbc:db2://localhost:50000/nomedobanco
 DB_USERNAME=admin
 DB_PASSWORD=senha123
@@ -305,11 +301,28 @@ mvn clean package
 java -jar target/apigetitem-1.0.0.jar
 ```
 
-#### 4. Verifique se Está Rodando
+#### 4. Verifique a Saúde da API
 
 ```bash
-curl -H "X-API-KEY: suaapikey" http://localhost:8081/api/erp
+curl -H "X-API-KEY: sua_chave_secreta_aqui" http://localhost:8081/api/erp
 ```
+
+---
+
+### 🐳 Ambiente de Produção (Docker)
+
+Para implantar em servidores ou validar o comportamento de Build independente do seu setup local, use a versão Docker.
+
+**Requisitos Específicos:** Docker e Docker Compose
+
+Certifique-se de que o arquivo `.env` já esteja preenchido. Então execute:
+
+```bash
+# Faz o build (Multi-stage) e sobe o container em background na porta 8081
+docker-compose up -d --build
+```
+
+O contêiner será iniciado com JRE otimizado e já aplicando suas variáveis de ambiente passadas no docker-compose. Verifique os logs se necessário com: `docker-compose logs -f`.
 
 ---
 
@@ -318,7 +331,7 @@ curl -H "X-API-KEY: suaapikey" http://localhost:8081/api/erp
 ### 1. Listar Todos os Itens (Paginado)
 
 ```bash
-curl -H "X-API-KEY: suaapikey" \
+curl -H "X-API-KEY: sua_chave_secreta_aqui" \
   "http://localhost:8081/api/erp?page=0&size=10&sort=codeItem,asc"
 ```
 
@@ -344,14 +357,14 @@ curl -H "X-API-KEY: suaapikey" \
 ### 2. Buscar por Código Exato
 
 ```bash
-curl -H "X-API-KEY: suaapikey" \
+curl -H "X-API-KEY: sua_chave_secreta_aqui" \
   "http://localhost:8081/api/erp/find-by-code?q=10.01"
 ```
 
 ### 3. Buscar Parcial por Descrição
 
 ```bash
-curl -H "X-API-KEY: suaapikey" \
+curl -H "X-API-KEY: sua_chave_secreta_aqui" \
   "http://localhost:8081/api/erp/search-desc?q=armario"
 ```
 

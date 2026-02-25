@@ -5,7 +5,6 @@ import java.util.Collections;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import jakarta.servlet.FilterChain;
@@ -14,7 +13,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 // Esta classe é um filtro de segurança que pode ser usado para validar a chave API em cada requisição
-@Component
 public class ApiKeyFilter extends OncePerRequestFilter {
 
     // A chave API esperada é injetada via construtor, usando a classe
@@ -28,8 +26,9 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-            FilterChain chain) throws ServletException, IOException {
-        // Allow unauthenticated access to Swagger/OpenAPI, webjar resources and actuator
+                                    FilterChain chain) throws ServletException, IOException {
+        // Allow unauthenticated access to Swagger/OpenAPI, webjar resources and
+        // actuator
         String path = request.getRequestURI();
         String method = request.getMethod();
 
@@ -39,8 +38,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
                 || path.startsWith(request.getContextPath() + "/webjars")
                 || path.startsWith(request.getContextPath() + "/swagger-ui")
                 || path.equals(request.getContextPath() + "/swagger-ui.html")
-                || path.startsWith(request.getContextPath() + "/actuator")
-        ) {
+                || path.startsWith(request.getContextPath() + "/actuator")) {
             chain.doFilter(request, response);
             return;
         }

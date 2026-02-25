@@ -1,0 +1,38 @@
+name: CI - Build & Test
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+        
+    - name: Make Maven Wrapper Executable
+      run: chmod +x mvnw
+        
+    - name: Build with Maven (and verify)
+      run: ./mvnw clean verify
+      
+    # Opcional: Fazer upload do relatorio de testes
+    - name: Upload Test Report
+      uses: actions/upload-artifact@v4
+      if: always() # Sempre executa mesmo se testes falharem
+      with:
+        name: test-results
+        path: target/surefire-reports
+        retention-days: 5

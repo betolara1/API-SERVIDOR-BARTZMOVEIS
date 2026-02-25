@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  api-getitem:
+    build: .
+    container_name: bartz-api-getitem
+    ports:
+      - "8081:8081"
+    env_file:
+      - .env
+    restart: unless-stopped
+    # Defina redes se precisar integrar localmente com o banco
+    # networks:
+    #   - bartz-network
+
+    # networks:
+    #   bartz-network:
+    #     driver: bridge
