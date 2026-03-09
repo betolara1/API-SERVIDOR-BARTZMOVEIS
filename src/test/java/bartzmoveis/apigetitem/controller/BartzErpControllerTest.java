@@ -24,12 +24,12 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.web.servlet.MockMvc;
 
-import bartzmoveis.apigetitem.model.BartzErpDB;
-import bartzmoveis.apigetitem.repository.BartzErpRepository;
-import bartzmoveis.apigetitem.service.BartzErpService;
+import bartzmoveis.apigetitem.model.Item;
+import bartzmoveis.apigetitem.repository.ItemRepository;
+import bartzmoveis.apigetitem.service.ItemService;
 import bartzmoveis.apigetitem.config.ApiKeyProperties;
 
-@WebMvcTest(BartzErpController.class)
+@WebMvcTest(ItemController.class)
 @AutoConfigureMockMvc(addFilters = false) // Desabilita o Spring Security
 public class BartzErpControllerTest {
 
@@ -37,28 +37,28 @@ public class BartzErpControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private BartzErpService service;
+    private ItemService service;
 
     @MockBean
-    private BartzErpRepository repository;
+    private ItemRepository repository;
 
     // Fazendo MockBean da configuração de segurança para evitar
     // NoSuchBeanDefinitionException
     @MockBean
     private ApiKeyProperties apiKeyProperties;
 
-    private BartzErpDB mockItem;
+    private Item mockItem;
 
     @BeforeEach
     void setUp() {
-        mockItem = mock(BartzErpDB.class);
+        mockItem = mock(Item.class);
         org.mockito.Mockito.lenient().when(mockItem.getCodeItem()).thenReturn("10.01");
         org.mockito.Mockito.lenient().when(mockItem.getDescription()).thenReturn("Armario");
     }
 
     @Test
     void listAll_ShouldReturnPaginatedItems() throws Exception {
-        Page<BartzErpDB> pagedResponse = new PageImpl<>(Arrays.asList(mockItem));
+        Page<Item> pagedResponse = new PageImpl<>(Arrays.asList(mockItem));
         when(repository.findAll(any(Pageable.class))).thenReturn(pagedResponse);
 
         mockMvc.perform(get("/api/erp")

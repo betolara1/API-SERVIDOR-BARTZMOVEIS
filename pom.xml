@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>bartzmoveis</groupId>
 	<artifactId>apigetitem</artifactId>
-	<version>0.0.3-SNAPSHOT</version>
+	<version>0.0.4</version>
 	<name>apigetitem</name>
 	<description>API CRIADA PARA BUSCAR NO BANCO DE DADOS DO SERVIDOR PARA RETORNAR AS INFORMAÇÕES NECESSÁRIAS.</description>
 	<url/>

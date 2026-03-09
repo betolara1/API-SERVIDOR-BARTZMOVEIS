@@ -12,7 +12,7 @@ import lombok.Getter;
 @Getter
 @Immutable // Diz ao Hibernate que essa entidade nunca muda
 @Table(name = "ITEM") // Mapeia a entidade para a tabela ITEM do banco de dados
-public class BartzErpDB {
+public class Item {
 
     @Id
     @Column(name = "ITEM") // Mapeia o campo codeItem para a coluna ITEM da tabela

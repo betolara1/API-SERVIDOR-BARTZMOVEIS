@@ -1,4 +1,3 @@
-
 # 🚀 API Bartz Móveis - ERP
 
 Uma API REST robusta e segura desenvolvida em **Spring Boot** para consultas de dados em banco de dados **IBM DB2**, com foco em performance, segurança e boas práticas de engenharia de software.
@@ -43,9 +42,12 @@ Uma API REST robusta e segura desenvolvida em **Spring Boot** para consultas de 
 ```mermaid
 flowchart TB
   subgraph Application
-    A["BartzErpController"] --> B["BartzErpService"]
-    B --> C["BartzErpRepository (JPA)"]
-    C --> D["IBM DB2 Database"]
+    A1["ItemController"] --> B1["ItemService"]
+    A2["CorController"] --> B2["CorService"]
+    B1 --> C1["ItemRepository (JPA)"]
+    B2 --> C2["CorRepository (JPA)"]
+    C1 --> D["IBM DB2 Database"]
+    C2 --> D
   end
 ```
 
@@ -96,8 +98,8 @@ A API utiliza **autenticação stateless** baseada em API Key. O cliente deve in
 ```
 1. Cliente recebe: API_KEY = "suaapikey"
 
-2. A cada requisição, envia:
-   GET /api/erp
+2. A cada requisição, envia (exemplo):
+   GET /api/item
    Header: X-API-KEY: suaapikey
 
 3. ApiKeyFilter valida:
@@ -191,18 +193,28 @@ public class SecurityConfig {
 
 ### Base URL
 ```
-http://localhost:8081/api/erp
+http://localhost:8081/api
 ```
 
-### Endpoints Disponíveis
+### Endpoints Disponíveis: ITENS (`/api/item`)
 
 | Método | Endpoint | Descrição | Query Params | Headers |
 |--------|----------|-----------|--------------|---------|
-| **GET** | `/api/erp` | Lista todos os itens (paginado) | `page`, `size`, `sort` | `X-API-KEY` |
-| **GET** | `/api/erp/find-by-code` | Busca por código exato | `q` (obrigatório) | `X-API-KEY` |
-| **GET** | `/api/erp/find-by-description` | Busca por descrição exata | `q` (obrigatório) | `X-API-KEY` |
-| **GET** | `/api/erp/search-code` | Busca parcial por código | `q` (obrigatório) | `X-API-KEY` |
-| **GET** | `/api/erp/search-desc` | Busca parcial por descrição | `q` (obrigatório) | `X-API-KEY` |
+| **GET** | `/api/item` | Lista todos os itens (paginado) | `page`, `size`, `sort` | `X-API-KEY` |
+| **GET** | `/api/item/find-by-code` | Busca por código exato | `q` (obrigatório) | `X-API-KEY` |
+| **GET** | `/api/item/find-by-description` | Busca por descrição exata | `q` (obrigatório) | `X-API-KEY` |
+| **GET** | `/api/item/search-code` | Busca parcial por código | `q` (obrigatório) | `X-API-KEY` |
+| **GET** | `/api/item/search-desc` | Busca parcial por descrição | `q` (obrigatório) | `X-API-KEY` |
+
+### Endpoints Disponíveis: CORES (`/api/cor`)
+
+| Método | Endpoint | Descrição | Query Params | Headers |
+|--------|----------|-----------|--------------|---------|
+| **GET** | `/api/cor` | Lista todas as cores (paginadas) | `page`, `size`, `sort` | `X-API-KEY` |
+| **GET** | `/api/cor/find-by-sigla` | Busca por sigla exata | `q` (obrigatório) | `X-API-KEY` |
+| **GET** | `/api/cor/find-by-descricao` | Busca por descrição exata | `q` (obrigatório) | `X-API-KEY` |
+| **GET** | `/api/cor/search-sigla` | Busca parcial por sigla | `q` (obrigatório) | `X-API-KEY` |
+| **GET** | `/api/cor/search-descricao` | Busca parcial por descrição | `q` (obrigatório) | `X-API-KEY` |
 
 ---
 
@@ -293,18 +305,16 @@ Adicione este arquivo ao `.gitignore`:
 # Com Maven
 ./mvnw spring-boot:run
 
-# Ou (Windows)
-mvnw.cmd spring-boot:run
-
 # Ou via JAR
-mvn clean package
-java -jar target/apigetitem-1.0.0.jar
+.\mvnw.cmd clean package -DskipTests
+.\mvnw.cmd spring-boot:run
+
 ```
 
 #### 4. Verifique a Saúde da API
 
 ```bash
-curl -H "X-API-KEY: sua_chave_secreta_aqui" http://localhost:8081/api/erp
+curl -H "X-API-KEY: sua_chave_secreta_aqui" http://localhost:8081/api/item
 ```
 
 ---
@@ -332,7 +342,7 @@ O contêiner será iniciado com JRE otimizado e já aplicando suas variáveis de
 
 ```bash
 curl -H "X-API-KEY: sua_chave_secreta_aqui" \
-  "http://localhost:8081/api/erp?page=0&size=10&sort=codeItem,asc"
+  "http://localhost:8081/api/item?page=0&size=10&sort=codeItem,asc"
 ```
 
 **Resposta:**
@@ -340,7 +350,6 @@ curl -H "X-API-KEY: sua_chave_secreta_aqui" \
 {
   "content": [
     {
-      "id": 1,
       "codeItem": "10.01",
       "description": "Armário 2 portas",
       "refComercial": "ARM-2P"
@@ -354,24 +363,39 @@ curl -H "X-API-KEY: sua_chave_secreta_aqui" \
 }
 ```
 
-### 2. Buscar por Código Exato
+### 2. Buscar Item por Código Exato
 
 ```bash
 curl -H "X-API-KEY: sua_chave_secreta_aqui" \
-  "http://localhost:8081/api/erp/find-by-code?q=10.01"
+  "http://localhost:8081/api/item/find-by-code?q=10.01"
 ```
 
-### 3. Buscar Parcial por Descrição
+### 3. Listar Todas as Cores (Paginadas)
 
 ```bash
 curl -H "X-API-KEY: sua_chave_secreta_aqui" \
-  "http://localhost:8081/api/erp/search-desc?q=armario"
+  "http://localhost:8081/api/cor?page=0&size=10"
 ```
 
-### 4. Requisição Sem API Key (Erro)
+### 4. Buscar Cor por Sigla
 
 ```bash
-curl "http://localhost:8081/api/erp"
+curl -H "X-API-KEY: sua_chave_secreta_aqui" \
+  "http://localhost:8081/api/cor/find-by-sigla?q=BRANCO"
+```
+
+**Resposta:**
+```json
+{
+  "siglaCor": "BRANCO",
+  "descricao": "BRANCO NEVE"
+}
+```
+
+### 5. Requisição Sem API Key (Erro)
+
+```bash
+curl "http://localhost:8081/api/item"
 ```
 
 **Resposta (401):**
@@ -443,13 +467,17 @@ apigetitem/
 │       │   │   ├── SecurityConfig.java
 │       │   │   └── ApiKeyProperties.java
 │       │   ├── controller/
-│       │   │   └── BartzErpController.java
+│       │   │   ├── ItemController.java
+│       │   │   └── CorController.java
 │       │   ├── service/
-│       │   │   └── BartzErpService.java
+│       │   │   ├── ItemService.java
+│       │   │   └── CorService.java
 │       │   ├── repository/
-│       │   │   └── BartzErpRepository.java
+│       │   │   ├── ItemRepository.java
+│       │   │   └── CorRepository.java
 │       │   ├── model/
-│       │   │   └── BartzErpDB.java
+│       │   │   ├── Item.java
+│       │   │   └── Cor.java
 │       │   ├── dto/
 │       │   │   └── ErrorResponse.java
 │       │   ├── security/
@@ -486,10 +514,18 @@ Se preferir, use outro nome/locação e atualize o caminho acima. A imagem ajuda
 
 ## 📄 Estrutura de Dados
 
-A API mapeia a tabela `ITEM` com os seguintes atributos principais:
-- `codeItem`: Código único do item.
-- `description`: Descrição detalhada do produto.
-- `refComercial`: Referência comercial do item.
+A API interage com duas tabelas principais:
+
+### Tabela `ITEM`
+- **`codeItem`** (chave primária): Código único do item. (Coluna: `ITEM`)
+- **`description`**: Descrição detalhada do produto. (Coluna: `DESCRICAO`)
+- **`refComercial`**: Referência comercial do item. (Coluna: `REF_COMERCIAL`)
+
+### Tabela `COR`
+- **`siglaCor`** (chave primária): A sigla identificadora da cor, ex: BRANCO. (Coluna: `SIGLA_COR`)
+- **`descricao`**: O nome ou descrição completo da cor. (Coluna: `DESCRICAO`)
+
+---
 
 ## 🆘 Solução de Problemas
 
@@ -507,11 +543,10 @@ Este erro ocorre quando o Spring Boot não consegue encontrar o arquivo `.env` o
 
 ## 👨‍💻 Autor
 
-**Ralf** – Desenvolvedor Full Stack | Java | Spring Boot
+**Roberto Lara** – Desenvolvedor Full Stack | Java | Spring Boot
 
 ---
 
 ## 📄 Licença
 
 Este projeto é proprietário da **Bartz Móveis**.
-

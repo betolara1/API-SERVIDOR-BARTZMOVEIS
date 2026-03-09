@@ -18,23 +18,23 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import bartzmoveis.apigetitem.model.BartzErpDB;
-import bartzmoveis.apigetitem.repository.BartzErpRepository;
+import bartzmoveis.apigetitem.model.Item;
+import bartzmoveis.apigetitem.repository.ItemRepository;
 
 @ExtendWith(MockitoExtension.class)
 public class BartzErpServiceTest {
 
     @Mock
-    private BartzErpRepository repository;
+    private ItemRepository repository;
 
     @InjectMocks
-    private BartzErpService service;
+    private ItemService service;
 
-    private BartzErpDB mockItem;
+    private Item mockItem;
 
     @BeforeEach
     void setUp() {
-        mockItem = mock(BartzErpDB.class);
+        mockItem = mock(Item.class);
         org.mockito.Mockito.lenient().when(mockItem.getCodeItem()).thenReturn("10.01");
         org.mockito.Mockito.lenient().when(mockItem.getDescription()).thenReturn("Armario Branco");
     }
@@ -43,7 +43,7 @@ public class BartzErpServiceTest {
     void listAll_ShouldReturnAllItems() {
         when(repository.findAll()).thenReturn(Arrays.asList(mockItem));
         
-        List<BartzErpDB> result = service.listAll();
+        List<Item> result = service.listAll();
         
         assertEquals(1, result.size());
         assertEquals("10.01", result.get(0).getCodeItem());
@@ -54,7 +54,7 @@ public class BartzErpServiceTest {
     void findByCodeItem_WhenExists_ShouldReturnItem() {
         when(repository.findByCodeItem("10.01")).thenReturn(Optional.of(mockItem));
         
-        Optional<BartzErpDB> result = service.findByCodeItem("10.01");
+        Optional<Item> result = service.findByCodeItem("10.01");
         
         assertTrue(result.isPresent());
         assertEquals("10.01", result.get().getCodeItem());
@@ -64,7 +64,7 @@ public class BartzErpServiceTest {
     void findByCodeItem_WhenNotExists_ShouldReturnEmpty() {
         when(repository.findByCodeItem("99.99")).thenReturn(Optional.empty());
         
-        Optional<BartzErpDB> result = service.findByCodeItem("99.99");
+        Optional<Item> result = service.findByCodeItem("99.99");
         
         assertTrue(result.isEmpty());
     }
@@ -73,7 +73,7 @@ public class BartzErpServiceTest {
     void searchByDescription_ShouldReturnMatchingItems() {
         when(repository.findByDescriptionContaining("Branco")).thenReturn(Arrays.asList(mockItem));
         
-        List<BartzErpDB> result = service.searchByDescription("Branco");
+        List<Item> result = service.searchByDescription("Branco");
         
         assertEquals(1, result.size());
         assertEquals("Armario Branco", result.get(0).getDescription());
@@ -83,7 +83,7 @@ public class BartzErpServiceTest {
     void searchByCode_ShouldReturnMatchingItems() {
         when(repository.searchByPartCode("10")).thenReturn(Arrays.asList(mockItem));
         
-        List<BartzErpDB> result = service.searchByCode("10");
+        List<Item> result = service.searchByCode("10");
         
         assertEquals(1, result.size());
         assertEquals("10.01", result.get(0).getCodeItem());
