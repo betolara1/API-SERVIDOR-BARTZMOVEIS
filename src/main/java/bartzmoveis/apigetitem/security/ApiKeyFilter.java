@@ -19,7 +19,6 @@ public class ApiKeyFilter extends OncePerRequestFilter {
     // ApiKeyProperties
     // para obter o valor do .env
     private final String expectedApiKey;
-
     public ApiKeyFilter(String expectedApiKey) {
         this.expectedApiKey = expectedApiKey;
     }

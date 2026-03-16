@@ -3,7 +3,6 @@ package bartzmoveis.apigetitem.service;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,8 +16,10 @@ public class ItemService {
 
     // O repositório é injetado para que possamos acessar os dados do banco e
     // realizar as operações necessárias
-    @Autowired
     private ItemRepository repository;
+    public ItemService (ItemRepository repository){
+        this.repository = repository;
+    }
 
     // O método listAll() retorna uma lista de todos os itens do banco, usando o
     // método findAll() do repositório

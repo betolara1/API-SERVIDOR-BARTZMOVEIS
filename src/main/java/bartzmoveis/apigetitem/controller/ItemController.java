@@ -3,7 +3,6 @@ package bartzmoveis.apigetitem.controller;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -32,10 +31,12 @@ import bartzmoveis.apigetitem.service.ItemService;
 @CrossOrigin(origins = { "http://192.168.1.10:50000", "http://localhost:5173", "file://" })
 public class ItemController {
 
-    @Autowired
     private ItemService service;
-    @Autowired
     private ItemRepository repository;
+    private ItemController (ItemService service, ItemRepository repository){
+        this.service = service;
+        this.repository = repository;
+    }
 
     // O método listAll() é mapeado para o endpoint GET /api/erp, e retorna uma
     // página de itens do banco
