@@ -25,35 +25,34 @@
 
 ## 📌 Sobre o Projeto
 
-A **Bartz Móveis ERP API** foi concebida para atuar como uma **Camada Anticorrupção (Ponte)**. Ela resolve o problema de acesso direto a um sistema ERP legado ancorado em um banco de dados **IBM DB2**, o que dificulta a integração com front-ends modernos e expõe credenciais sensíveis.
+A **Bartz Móveis ERP API** atua como uma **Camada Anticorrupção (Ponte)** entre o frontend moderno e o sistema ERP legado (IBM DB2). 
 
-A API encapsula o acesso nativo e restrito do DB2 entregando serviços RESTful padronizados em JSON, com suporte a paginação e filtros avançados.
+Para garantir a máxima performance e simplicidade no acesso aos dados legados, a API utiliza **Spring JDBC (JdbcTemplate)** em vez de um ORM completo. Isso permite consultas SQL nativas otimizadas para o DB2, retornando dados diretamente em DTOs (Data Transfer Objects), eliminando o overhead de gerenciamento de entidades JPA em um cenário de leitura intensiva.
 
 Construída com foco em **produção real**, a API incorpora:
 
-- ✅ **Arquitetura em camadas** (Controller → Service → Repository → Model)
+- ✅ **Arquitetura Simplificada** (Controller → Service → JdbcTemplate)
 - ✅ **Segurança Stateless** via JWT (Pacote Modular `jwt-package`)
-- ✅ **Camada Anticorrupção** isolando o legado DB2
+- ✅ **Consultas Nativas** otimizadas para IBM DB2
 - ✅ **Containerização completa** com Docker e Docker Compose
 - ✅ **Documentação interativa** com Swagger / OpenAPI 3
-- ✅ **Suíte de testes** com JUnit 5 e Mockito
-- ✅ **Tratamento Global de Erros** para respostas padronizadas
+- ✅ **Suíte de testes** abrangente (Controllers e Services)
+- ✅ **Tratamento Global de Erros** padronizado
 
 ---
 
 ## 🏛️ Arquitetura
 
-### Padrão MVC + Service Layer
+### Fluxo de Dados (Stateless)
 
 ```mermaid
 flowchart TB
   subgraph Application
     A1["ItemController"] --> B1["ItemService"]
     A2["CorController"] --> B2["CorService"]
-    B1 --> C1["ItemRepository (JPA)"]
-    B2 --> C2["CorRepository (JPA)"]
+    B1 --> C1["JdbcTemplate"]
+    B2 --> C1
     C1 --> D["IBM DB2 Database"]
-    C2 --> D
   end
 ```
 
@@ -61,13 +60,11 @@ flowchart TB
 
 ```
 📦 apigetitem
- ├── 🔐 security/            # Filtros de segurança (ApiKeyFilter)
- ├── ⚙️ config/              # Configurações de Segurança e Propriedades
+ ├── 🔐 security/            # Filtros de segurança (JWT-Package)
+ ├── ⚙️ config/              # Configurações de Segurança e Swagger
  ├── 📡 controller/          # Endpoints REST (ItemController, CorController)
- ├── 🧩 service/             # Regras de negócio e lógica de aplicação
- ├── 🗄️ repository/          # Interfaces JPA para acesso ao IBM DB2
- ├── 🏷️ model/               # Entidades JPA mapeadas para o banco
- ├── 📤 dto/                 # Data Transfer Objects (ErrorResponse)
+ ├── 🧩 service/             # Regras de negócio e Consultas SQL (JdbcTemplate)
+ ├── 📤 dto/                 # Data Transfer Objects (ItemDTO, CorDTO)
  └── ⚠️ exceptions/          # Tratamento global de erros (GlobalExceptionHandler)
 ```
 
@@ -78,14 +75,14 @@ flowchart TB
 ### 📦 Itens (`/itens`)
 | Método | Endpoint | Parâmetro | Descrição | Auth |
 |--------|----------|-----------|-----------|------|
-| `GET` | `/itens` | - | Lista todos | ✅ |
-| `GET` | `/itens/search` | `codigo` | Busca por código exato ou parcial | ✅ |
-| `GET` | `/itens/search` | `descricao` | Busca por descrição exata ou parcial | ✅ |
+| `GET` | `/itens` | - | Lista todos os itens | ✅ |
+| `GET` | `/itens/search` | `codigo` | Busca por código (parcial/exato) | ✅ |
+| `GET` | `/itens/search` | `descricao` | Busca por descrição (parcial/exato) | ✅ |
 
 ### 🎨 Cores (`/cores`)
 | Método | Endpoint | Parâmetro | Descrição | Auth |
 |--------|----------|-----------|-----------|------|
-| `GET` | `/cores` | - | Lista todas | ✅ |
+| `GET` | `/cores` | - | Lista todas as cores | ✅ |
 | `GET` | `/cores/search` | `codigo` | Busca por sigla/código | ✅ |
 | `GET` | `/cores/search` | `descricao` | Busca por descrição | ✅ |
 
@@ -93,7 +90,7 @@ flowchart TB
 
 ## 🔐 Segurança
 
-A autenticação é baseada em **JWT (JSON Web Token)** de forma totalmente Stateless. O projeto utiliza o pacote modular `jwt-package` para gerenciar a segurança de forma eficiente.
+A autenticação é baseada em **JWT (JSON Web Token)** de forma totalmente Stateless, utilizando o pacote modular `jwt-package`.
 
 **Header Obrigatório:**
 ```http
@@ -103,20 +100,19 @@ Authorization: Bearer <seu_token_jwt>
 **Fluxo Interno:**
 1. O `JwtAuthFilter` intercepta a requisição.
 2. Valida o token usando a `jwt.secret-key` definida no `.env`.
-3. Verifica se o token não expirou e se a assinatura é válida.
-4. Se válido, libera o acesso aos dados do DB2.
-5. Se inválido, ausente ou expirado, retorna `401 Unauthorized`.
+3. Se válido, libera o acesso às consultas ao DB2.
+4. Se inválido ou expirado, retorna `401 Unauthorized`.
 
 ---
 
 ## 🧪 Testes
 
-A API possui cobertura de testes automatizados para garantir a integridade da ponte de dados:
+A API possui cobertura de testes automatizados com JUnit 5 e Mockito:
 
 | Camada | Ferramenta | Classes de Teste |
 |--------|------------|-----------------|
-| **Service (Unit)** | JUnit 5 + Mockito | `BartzErpServiceTest` |
-| **Controller (Integration)** | `@WebMvcTest` + MockMvc | `BartzErpControllerTest` |
+| **Service (Unit)** | JUnit 5 + Mockito | `BartzErpServiceTest`, `CorServiceTest` |
+| **Controller (Integration)** | `@WebMvcTest` + MockMvc | `BartzErpControllerTest`, `CorControllerTest` |
 
 ```bash
 # Executar todos os testes
@@ -127,19 +123,15 @@ A API possui cobertura de testes automatizados para garantir a integridade da po
 
 ## 🐳 Rodando com Docker (Produção)
 
-A forma mais robusta de subir a API em qualquer ambiente:
-
-**1. Configure as variáveis de ambiente:**
-Crie um arquivo `.env` na raiz do projeto:
-
+**1. Configure o arquivo `.env`:**
 ```env
-# .env
 jwt.secret-key=sua_chave_secreta_com_no_minimo_32_chars
 jwt.excluded-paths=/auth/login, /swagger-ui/**, /v3/api-docs/**
 jwt.expiration-time=43200000
 DB_URL=jdbc:db2://seu_host:50000/nomedobanco
 DB_USERNAME=usuario_db2
 DB_PASSWORD=senha_db2
+DB_PORT=8080
 ```
 
 **2. Suba o container:**
@@ -147,50 +139,22 @@ DB_PASSWORD=senha_db2
 docker-compose up --build -d
 ```
 
-**3. Verifique o status:**
-```bash
-docker-compose ps
-docker-compose logs -f app
-```
-
----
-
-## 💻 Rodando Localmente (Desenvolvimento)
-
-**Pré-requisitos:**
-- Java 17+
-- Maven 3.9+
-- Acesso ao banco IBM DB2
-
-```bash
-# Clone o repositório
-git clone <url-do-repositorio>
-cd apigetitem
-
-# Execute a aplicação via Maven
-./mvnw spring-boot:run
-```
-
 ---
 
 ## 📖 Documentação Interativa (Swagger)
 
-Com a aplicação rodando, acesse:
+Acesse: `http://localhost:{PORTA}/swagger-ui.html`
 
-```
-http://localhost:8081/swagger-ui.html
-```
-
-Você terá acesso a **todos os endpoints documentados**, com possibilidade de testar as queries para o DB2 diretamente pelo navegador, incluindo o campo para inserir a `X-API-KEY`.
+A documentação permite testar todos os endpoints. Lembre-se de configurar o **Authorize** com o token JWT (Bearer) para chamadas protegidas.
 
 ---
 
 ## 📊 Estrutura de Dados (DB2)
 
-A API interage com as tabelas principais do ERP:
+A API mapeia as seguintes informações do banco legado:
 
-- **Tabela `ITEM`**: Mapeia `codeItem` (ITEM), `description` (DESCRICAO) e `refComercial` (REF_COMERCIAL).
-- **Tabela `COR`**: Mapeia `siglaCor` (SIGLA_COR) e `descricao` (DESCRICAO).
+- **Tabela `ITEM`**: Campos `ITEM` (Código), `DESCRICAO` e `REF_COMERCIAL`.
+- **Tabela `COR`**: Campos `SIGLA_COR` e `DESCRICAO`.
 
 ---
 
@@ -200,7 +164,7 @@ A API interage com as tabelas principais do ERP:
 |-----------|--------|------------|
 | Java | 17 (LTS) | Linguagem principal |
 | Spring Boot | 3.4.2 | Framework web e IoC |
-| Spring Data JPA | — | ORM e persistência |
+| Spring JDBC | — | Acesso a dados via JdbcTemplate |
 | Spring Security | 6.4.x | Controle de acesso via JWT |
 | JWT Package | 1.0.3 | Pacote customizado para gestão de tokens |
 | IBM DB2 | 12.1 | Banco de dados legado |
@@ -212,17 +176,9 @@ A API interage com as tabelas principais do ERP:
 
 ---
 
-## 🆘 Solução de Problemas
+## 👨‍💻 Autor
 
-### Erro: `JWT signature does not match`
-- Verifique se a `jwt.secret-key` no `.env` é exatamente a mesma que foi usada para gerar o token.
-- Certifique-se de que a chave tem pelo menos 32 caracteres.
-
----
-
-## 👨💻 Autor
-
-Desenvolvido por **Roberto Lara** — Full Stack Developer
+Desenvolvido por **Roberto Lara** — Backend Developer
 
 [![GitHub](https://img.shields.io/badge/GitHub-robertolara-181717?style=for-the-badge&logo=github)](https://github.com/betolara1)
 
@@ -230,6 +186,7 @@ Desenvolvido por **Roberto Lara** — Full Stack Developer
 
 <div align="center">
 
-**Bartz Móveis ERP API** — A ponte segura para seus dados legados.
+**Bartz Móveis ERP API** — A ponte segura e performática para seus dados legados.
 
 </div>
+

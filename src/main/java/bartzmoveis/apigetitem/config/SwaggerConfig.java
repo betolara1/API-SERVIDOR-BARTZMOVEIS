@@ -14,7 +14,6 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("API Bartz Móveis - ERP")
-                        .version("1.0.3")
-                        .description("API para consulta de itens no banco de dados DB2"));
+                        .version("1.0.5"));
     }
 }
