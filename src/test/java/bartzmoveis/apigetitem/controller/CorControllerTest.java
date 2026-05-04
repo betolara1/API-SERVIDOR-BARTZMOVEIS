@@ -18,73 +18,73 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import bartzmoveis.apigetitem.service.ItemService;
+import bartzmoveis.apigetitem.service.CorService;
 import bartzmoveis.apigetitem.config.ApiKeyProperties;
-import bartzmoveis.apigetitem.dto.ItemDTO;
+import bartzmoveis.apigetitem.dto.CorDTO;
 
-@WebMvcTest(ItemController.class)
-@AutoConfigureMockMvc(addFilters = false) // Desabilita o Spring Security
-public class BartzErpControllerTest {
+@WebMvcTest(CorController.class)
+@AutoConfigureMockMvc(addFilters = false)
+public class CorControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ItemService service;
+    private CorService service;
 
     @MockitoBean
     private ApiKeyProperties apiKeyProperties;
 
-    private ItemDTO mockItem;
+    private CorDTO mockCor;
 
     @BeforeEach
     void setUp() {
-        mockItem = new ItemDTO("10.01", "Armario", "REF123");
+        mockCor = new CorDTO("BR", "Branco");
     }
 
     @Test
-    void listAll_ShouldReturnItems() throws Exception {
-        when(service.listAll()).thenReturn(Arrays.asList(mockItem));
+    void listAll_ShouldReturnColors() throws Exception {
+        when(service.listAll()).thenReturn(Arrays.asList(mockCor));
 
-        mockMvc.perform(get("/item"))
+        mockMvc.perform(get("/cor"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].codeItem", is("10.01")));
+                .andExpect(jsonPath("$[0].siglaCor", is("BR")));
     }
 
     @Test
     void listAll_WhenEmpty_ShouldReturn204() throws Exception {
         when(service.listAll()).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/item"))
+        mockMvc.perform(get("/cor"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    void searchByCode_WhenExists_ShouldReturn200() throws Exception {
-        when(service.findByCode("10.01")).thenReturn(Arrays.asList(mockItem));
+    void findBySiglaCor_WhenExists_ShouldReturn200() throws Exception {
+        when(service.findBySiglaCor("BR")).thenReturn(Arrays.asList(mockCor));
 
-        mockMvc.perform(get("/item/codigo").param("code", "10.01"))
+        mockMvc.perform(get("/cor/cor").param("code", "BR"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].codeItem", is("10.01")));
+                .andExpect(jsonPath("$[0].siglaCor", is("BR")));
     }
 
     @Test
-    void searchByCode_WhenNotExists_ShouldReturn204() throws Exception {
-        when(service.findByCode("99.99")).thenReturn(Collections.emptyList());
+    void findBySiglaCor_WhenNotExists_ShouldReturn204() throws Exception {
+        when(service.findBySiglaCor("XX")).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/item/codigo").param("code", "99.99"))
+        mockMvc.perform(get("/cor/cor").param("code", "XX"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    void searchByDescription_WhenExists_ShouldReturn200() throws Exception {
-        when(service.findByDescription("Armario")).thenReturn(Arrays.asList(mockItem));
+    void searchByDescricao_WhenExists_ShouldReturn200() throws Exception {
+        when(service.findByDescricao("Branco")).thenReturn(Arrays.asList(mockCor));
 
-        mockMvc.perform(get("/item/descricao").param("desc", "Armario"))
+        mockMvc.perform(get("/cor/descricao").param("desc", "Branco"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].description", is("Armario")));
+                .andExpect(jsonPath("$[0].descricao", is("Branco")));
     }
 }

@@ -30,7 +30,7 @@ public class CorService {
 
     @Transactional(readOnly = true)
     public List<CorDTO> findBySiglaCor(String siglaCor){
-        String sql = "SELECT SIGLA_COR, DESCRICAO FROM SCHEMA.COR" + "WHERE UPPER(SIGLA_COR) LIKE UPPER(?)";
+        String sql = "SELECT SIGLA_COR, DESCRICAO FROM SCHEMA.COR " + "WHERE UPPER(SIGLA_COR) LIKE UPPER(?)";
         
         String formattedSql = "%" + siglaCor + "%";
 
@@ -44,7 +44,7 @@ public class CorService {
 
     @Transactional(readOnly = true)
     public List<CorDTO> findByDescricao(String descricao){
-        String sql = "SELECT SIGLA_COR, DESCRICAO FROM SCHEMA.COR" + "WHERE UPPER(DESCRICAO) LIKE UPPER(?)";
+        String sql = "SELECT SIGLA_COR, DESCRICAO FROM SCHEMA.COR " + "WHERE UPPER(DESCRICAO) LIKE UPPER(?)";
 
         String formattedSql = "%" + descricao + "%";
 

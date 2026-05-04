@@ -39,7 +39,7 @@ public class ItemService {
     public List<ItemDTO> findByCode(String code) {
         //Usa-se UPPER para a busca não diferenciar maiúsculas de minúsculas
         //Usa-se LIKE ? para que ele retorne qualquer valor que contenha o código
-        String sql = "SELECT ITEM, DESCRICAO, REF_COMERCIAL FROM SCHEMA.ITEM" + "WHERE UPPER(ITEM) LIKE UPPER(?)";
+        String sql = "SELECT ITEM, DESCRICAO, REF_COMERCIAL FROM SCHEMA.ITEM " + "WHERE UPPER(ITEM) LIKE UPPER(?)";
 
         String formattedSql = "%" + code + "%";
 
@@ -54,7 +54,7 @@ public class ItemService {
 
     @Transactional(readOnly = true)
     public List<ItemDTO> findByDescription(String desc) {
-        String sql = "SELECT ITEM, DESCRICAO, REF_COMERCIAL FROM SCHEMA.ITEM" + "WHERE UPPER(DESCRICAO) LIKE UPPER(?)";
+        String sql = "SELECT ITEM, DESCRICAO, REF_COMERCIAL FROM SCHEMA.ITEM " + "WHERE UPPER(DESCRICAO) LIKE UPPER(?)";
 
         String formattedSql = "%" + desc + "%";
 

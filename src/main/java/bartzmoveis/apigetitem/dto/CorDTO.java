@@ -14,8 +14,8 @@ public class CorDTO {
 
     public CorDTO(){}
 
-    public CorDTO(String siclaString, String descricao){
-        this.siglaCor = getSiglaCor();
-        this.descricao = getDescricao();
+    public CorDTO(String siglaCor, String descricao){
+        this.siglaCor = siglaCor;
+        this.descricao = descricao;
     }
 }

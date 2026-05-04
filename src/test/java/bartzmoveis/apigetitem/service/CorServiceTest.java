@@ -22,68 +22,68 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
-import bartzmoveis.apigetitem.dto.ItemDTO;
+import bartzmoveis.apigetitem.dto.CorDTO;
 
 @ExtendWith(MockitoExtension.class)
-public class BartzErpServiceTest {
+public class CorServiceTest {
 
     @Mock
     private JdbcTemplate jdbcTemplate;
 
     @InjectMocks
-    private ItemService service;
+    private CorService service;
 
-    private ItemDTO mockItem;
+    private CorDTO mockCor;
 
     @BeforeEach
     void setUp() {
-        mockItem = new ItemDTO("10.01", "Armario Branco", "REF123");
+        mockCor = new CorDTO("BR", "Branco");
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void listAll_ShouldReturnAllItems() {
+    void listAll_ShouldReturnAllColors() {
         when(jdbcTemplate.query(anyString(), any(RowMapper.class)))
-            .thenReturn(Arrays.asList(mockItem));
+            .thenReturn(Arrays.asList(mockCor));
         
-        List<ItemDTO> result = service.listAll();
+        List<CorDTO> result = service.listAll();
         
         assertEquals(1, result.size());
-        assertEquals("10.01", result.get(0).getCodeItem());
+        assertEquals("BR", result.get(0).getSiglaCor());
         verify(jdbcTemplate, times(1)).query(anyString(), any(RowMapper.class));
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void findByCode_ShouldReturnMatchingItems() {
-        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq("%10.01%")))
-            .thenReturn(Arrays.asList(mockItem));
+    void findBySiglaCor_ShouldReturnMatchingColors() {
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq("%BR%")))
+            .thenReturn(Arrays.asList(mockCor));
         
-        List<ItemDTO> result = service.findByCode("10.01");
+        List<CorDTO> result = service.findBySiglaCor("BR");
         
         assertEquals(1, result.size());
-        assertEquals("10.01", result.get(0).getCodeItem());
+        assertEquals("BR", result.get(0).getSiglaCor());
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void findByDescription_ShouldReturnMatchingItems() {
+    void findByDescricao_ShouldReturnMatchingColors() {
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq("%Branco%")))
-            .thenReturn(Arrays.asList(mockItem));
+            .thenReturn(Arrays.asList(mockCor));
         
-        List<ItemDTO> result = service.findByDescription("Branco");
+        List<CorDTO> result = service.findByDescricao("Branco");
         
         assertEquals(1, result.size());
-        assertEquals("Armario Branco", result.get(0).getDescription());
+        assertEquals("Branco", result.get(0).getDescricao());
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void findByCode_WhenNoResults_ShouldReturnEmptyList() {
+    void findBySiglaCor_WhenNoResults_ShouldReturnEmptyList() {
         when(jdbcTemplate.query(anyString(), any(RowMapper.class), anyString()))
             .thenReturn(Collections.emptyList());
         
-        List<ItemDTO> result = service.findByCode("99.99");
+        List<CorDTO> result = service.findBySiglaCor("XX");
         
         assertTrue(result.isEmpty());
     }
