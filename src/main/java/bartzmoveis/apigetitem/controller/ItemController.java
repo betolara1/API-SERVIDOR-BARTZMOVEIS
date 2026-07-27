@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import bartzmoveis.apigetitem.dto.ItemDTO;
+import bartzmoveis.apigetitem.dto.ItemNodeDTO;
 import bartzmoveis.apigetitem.service.ItemService;
 
 // Esta classe é o controlador REST para a entidade Item, responsável por expor os 
@@ -56,5 +57,29 @@ public class ItemController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(results);
+    }
+
+    // URL: /itens/search?codigoBarras=7899000002410
+    @GetMapping(value = "/search", params = "codigoBarras")
+    public ResponseEntity<List<ItemDTO>> searchByBarcode(@RequestParam("codigoBarras") String query) {
+        List<ItemDTO> results = service.findByBarcode(query);
+
+        if (results.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(results);
+    }
+
+    // URL: /itens/estrutura?codigo=LR0020.0007
+    // Retorna o item e, recursivamente, todos os itens filhos (árvore de
+    // estrutura), equivalente à tela EPM019 do ERP.
+    @GetMapping(value = "/estrutura", params = "codigo")
+    public ResponseEntity<ItemNodeDTO> estrutura(@RequestParam("codigo") String codigo) {
+        ItemNodeDTO raiz = service.getEstrutura(codigo);
+
+        if (raiz == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(raiz);
     }
 }

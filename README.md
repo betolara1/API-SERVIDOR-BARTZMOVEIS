@@ -34,8 +34,10 @@ Construída com foco em **produção real**, a API incorpora:
 - ✅ **Arquitetura Simplificada** (Controller → Service → JdbcTemplate)
 - ✅ **Segurança Stateless** via JWT (Pacote Modular `jwt-package`)
 - ✅ **Consultas Nativas** otimizadas para IBM DB2
+- ✅ **Consulta Estrutural Hierárquica (Árvore de Itens / EPM019)**
 - ✅ **Containerização completa** com Docker e Docker Compose
 - ✅ **Documentação interativa** com Swagger / OpenAPI 3
+- ✅ **Monitoramento de Saúde** via Spring Boot Actuator
 - ✅ **Suíte de testes** abrangente (Controllers e Services)
 - ✅ **Tratamento Global de Erros** padronizado
 
@@ -62,34 +64,42 @@ flowchart TB
 ```
 📦 apigetitem
  ├── 🔐 security/            # Filtros de segurança (JWT-Package)
- ├── ⚙️ config/              # Configurações de Segurança e Swagger
+ ├── ⚙️ config/              # Configurações de Segurança, CORS e Swagger
  ├── 📡 controller/          # Endpoints REST (Auth, Item, Cor)
  ├── 🧩 service/             # Regras de negócio e Consultas SQL (JdbcTemplate)
- ├── 📤 dto/                 # Data Transfer Objects (ItemDTO, CorDTO, LoginDTO)
+ ├── 📤 dto/                 # Data Transfer Objects (ItemDTO, CorDTO, ItemNodeDTO, LoginDTO)
  └── ⚠️ exceptions/          # Tratamento global de erros (GlobalExceptionHandler)
 ```
 
 ---
 
+## 🚀 Endpoints da API
+
 ### 🔑 Autenticação (`/auth`)
-| Método | Endpoint | Parâmetro | Descrição | Auth |
-|--------|----------|-----------|-----------|------|
-| `POST` | `/auth/login` | `JSON Body` | Autenticação via JSON (Recomendado) | ❌ |
-| `GET` | `/auth/login` | `user`, `pass` | Autenticação via Query Params | ❌ |
+| Método | Endpoint | Parâmetros Query | Descrição | Auth |
+|--------|----------|------------------|-----------|------|
+| `GET` | `/auth/login` | `username`, `password` | Autenticação via Query Params (retorna o Token JWT) | ❌ |
 
 ### 📦 Itens (`/itens`)
-| Método | Endpoint | Parâmetro | Descrição | Auth |
-|--------|----------|-----------|-----------|------|
+| Método | Endpoint | Parâmetros Query | Descrição | Auth |
+|--------|----------|------------------|-----------|------|
 | `GET` | `/itens` | - | Lista todos os itens | ✅ |
 | `GET` | `/itens/search` | `codigo` | Busca por código (parcial/exato) | ✅ |
 | `GET` | `/itens/search` | `descricao` | Busca por descrição (parcial/exato) | ✅ |
+| `GET` | `/itens/search` | `codigoBarras` | Busca por código de barras | ✅ |
+| `GET` | `/itens/estrutura` | `codigo` | Retorna a estrutura hierárquica em árvore do item (EPM019) | ✅ |
 
 ### 🎨 Cores (`/cores`)
-| Método | Endpoint | Parâmetro | Descrição | Auth |
-|--------|----------|-----------|-----------|------|
+| Método | Endpoint | Parâmetros Query | Descrição | Auth |
+|--------|----------|------------------|-----------|------|
 | `GET` | `/cores` | - | Lista todas as cores | ✅ |
 | `GET` | `/cores/search` | `codigo` | Busca por sigla/código | ✅ |
 | `GET` | `/cores/search` | `descricao` | Busca por descrição | ✅ |
+
+### 🏥 Monitoramento (`/actuator`)
+| Método | Endpoint | Parâmetro | Descrição | Auth |
+|--------|----------|-----------|-----------|------|
+| `GET` | `/actuator/health` | - | Verificação de integridade/saúde da API | ❌ |
 
 ---
 
@@ -98,17 +108,21 @@ flowchart TB
 A autenticação é baseada em **JWT (JSON Web Token)** de forma totalmente Stateless, utilizando o pacote modular `jwt-package`.
 
 ### Como obter o Token
-Envie uma requisição para `/auth/login` com as credenciais administrativas configuradas no `.env`.
+Envie uma requisição `GET` para `/auth/login` com as credenciais administrativas configuradas no `.env`.
 
-**Exemplo (POST):**
-```json
-{
-  "username": "seu_usuario",
-  "password": "sua_senha"
-}
+**Exemplo:**
+```http
+GET /auth/login?username=seu_usuario&password=sua_senha
+```
+
+**Resposta:**
+```text
+eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzZXVfdXN1YXJpbyIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwMDQzMjAwfQ...
 ```
 
 ### Uso do Token
+Em todas as requisições protegidas, inclua o token no cabeçalho HTTP:
+
 **Header Obrigatório:**
 ```http
 Authorization: Bearer <seu_token_jwt>
@@ -134,6 +148,17 @@ A API possui cobertura de testes automatizados com JUnit 5 e Mockito:
 ```bash
 # Executar todos os testes
 ./mvnw test
+```
+
+---
+
+## 💻 Executando Localmente (Desenvolvimento)
+
+Para executar a aplicação em modo de desenvolvimento local via Maven Wrapper:
+
+```bash
+# Baixar dependências e rodar a aplicação
+./mvnw spring-boot:run
 ```
 
 ---
@@ -171,7 +196,7 @@ docker-compose up --build -d
 
 Acesse: `http://localhost:{PORTA}/swagger-ui.html`
 
-A documentação permite testar todos os endpoints. Lembre-se de configurar o **Authorize** com o token JWT (Bearer) para chamadas protegidas.
+A documentação permite testar todos os endpoints. Lembre-se de clicar em **Authorize** e fornecer o token JWT (`Bearer <token>`) para chamadas aos endpoints protegidos.
 
 ---
 
@@ -181,6 +206,7 @@ A API mapeia as seguintes informações do banco legado:
 
 - **Tabela `ITEM`**: Campos `ITEM` (Código), `DESCRICAO` e `REF_COMERCIAL`.
 - **Tabela `COR`**: Campos `SIGLA_COR` e `DESCRICAO`.
+- **Tabela `FICHABAS`**: Estrutura e composição hierárquica de produtos (`ITEM_PAI` / `ITEM_FILHO`).
 
 ---
 
@@ -192,7 +218,8 @@ A API mapeia as seguintes informações do banco legado:
 | Spring Boot | 3.4.2 | Framework web e IoC |
 | Spring JDBC | — | Acesso a dados via JdbcTemplate |
 | Spring Security | 6.4.x | Controle de acesso via JWT |
-| JWT Package | 1.0.3 | Pacote customizado para gestão de tokens |
+| Spring Boot Actuator | 3.4.2 | Endpoint de integridade e monitoramento (`/actuator/health`) |
+| JWT Package | 1.0.4 | Pacote customizado para gestão de tokens |
 | IBM DB2 | 12.1 | Banco de dados legado |
 | SpringDoc OpenAPI | 2.3.0 | Documentação Swagger |
 | Lombok | — | Redução de boilerplate |
@@ -215,4 +242,3 @@ Desenvolvido por **Roberto Lara** — Backend Developer
 **Bartz Móveis ERP API** — A ponte segura e performática para seus dados legados.
 
 </div>
-
