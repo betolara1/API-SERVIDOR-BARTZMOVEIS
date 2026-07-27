@@ -161,6 +161,11 @@ Para executar a aplicação em modo de desenvolvimento local via Maven Wrapper:
 ./mvnw spring-boot:run
 ```
 
+```bash
+# Para gerar o arquivo .JAR
+./mvnw clean package -DskipTests
+```
+
 ---
 
 ## 🐳 Rodando com Docker (Produção)
