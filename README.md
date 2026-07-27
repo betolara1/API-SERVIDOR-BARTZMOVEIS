@@ -18,7 +18,7 @@
 ## 📸 Preview (Swagger UI)
 
 <div align="center">
-  <img src="images/swagger-v2.png" alt="Swagger UI Preview" width="100%">
+  <img src="images/swagger-v3.png" alt="Swagger UI Preview" width="100%">
 </div>
 
 ---
