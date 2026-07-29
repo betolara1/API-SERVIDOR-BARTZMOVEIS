@@ -1,5 +1,7 @@
 package bartzmoveis.apigetitem.service;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -82,24 +84,56 @@ public class ItemService {
         }, formattedSql);
     }
 
-    // Busca o item pelo código de barras (campo CODIGO_ITEM_EAN, gravado como
-    // string numérica com zeros à esquerda). Compara ignorando os zeros à
-    // esquerda dos dois lados, pois leitores de código de barras podem
-    // devolver o valor sem o padding (ex.: EAN-13 x UPC-A).
+    // Busca o item pelo código de barras. As etiquetas internas de produção
+    // (impressas na peça cortada) têm prioridade: o número é o RECNUM da
+    // ETIQINT, cuja coluna ITEM já é o item da peça (confirmado com etiqueta
+    // física real: RECNUM 1511475 = item TV002050.2638, pedido 69312). Só cai
+    // para o EAN comercial do item (CODIGO_ITEM_EAN) se não achar nada como
+    // etiqueta -- a ordem importa, porque o EAN também é um contador numérico
+    // sequencial e pode coincidir por acaso com um RECNUM de outra peça.
     @Transactional(readOnly = true)
     public List<ItemDTO> findByBarcode(String barcode) {
-        String sql = "SELECT ITEM, DESCRICAO, REF_COMERCIAL FROM db2admin.ITEM "
-                + "WHERE TRIM(LEADING '0' FROM CODIGO_ITEM_EAN) = TRIM(LEADING '0' FROM ?)";
+        Long recnum = tryParseRecnum(barcode);
 
-        return jdbcTemplate.query(sql, (rs, rowNum) -> {
-            ItemDTO dto = new ItemDTO();
-            String item = rs.getString("ITEM").trim();
-            String descricao = rs.getString("DESCRICAO").trim();
-            dto.setCodeItem(item);
-            dto.setDescription(descricao + " (" + item + ")");
-            dto.setRefComercial(rs.getString("REF_COMERCIAL"));
-            return dto;
-        }, barcode);
+        if (recnum != null) {
+            String sqlEtiquetaInterna = "SELECT I.ITEM, I.DESCRICAO, I.REF_COMERCIAL "
+                    + "FROM DB2ADMIN.ETIQINT E INNER JOIN DB2ADMIN.ITEM I ON I.ITEM = E.ITEM "
+                    + "WHERE E.RECNUM = ?";
+            List<ItemDTO> porEtiquetaInterna = jdbcTemplate.query(sqlEtiquetaInterna, (rs, rowNum2) -> mapItemDTO(rs), recnum);
+            if (!porEtiquetaInterna.isEmpty()) {
+                return porEtiquetaInterna;
+            }
+
+            String sqlEstruturaPeca = "SELECT I.ITEM, I.DESCRICAO, I.REF_COMERCIAL "
+                    + "FROM DB2ADMIN.FICHABAS F INNER JOIN DB2ADMIN.ITEM I ON I.ITEM = F.ITEM_FILHO "
+                    + "WHERE F.RECNUM = ?";
+            List<ItemDTO> porEstruturaPeca = jdbcTemplate.query(sqlEstruturaPeca, (rs, rowNum2) -> mapItemDTO(rs), recnum);
+            if (!porEstruturaPeca.isEmpty()) {
+                return porEstruturaPeca;
+            }
+        }
+
+        String sqlEan = "SELECT ITEM, DESCRICAO, REF_COMERCIAL FROM db2admin.ITEM "
+                + "WHERE TRIM(LEADING '0' FROM CODIGO_ITEM_EAN) = TRIM(LEADING '0' FROM ?)";
+        return jdbcTemplate.query(sqlEan, (rs, rowNum) -> mapItemDTO(rs), barcode);
+    }
+
+    private static ItemDTO mapItemDTO(ResultSet rs) throws SQLException {
+        ItemDTO dto = new ItemDTO();
+        String item = rs.getString("ITEM").trim();
+        String descricao = rs.getString("DESCRICAO").trim();
+        dto.setCodeItem(item);
+        dto.setDescription(descricao + " (" + item + ")");
+        dto.setRefComercial(rs.getString("REF_COMERCIAL"));
+        return dto;
+    }
+
+    private static Long tryParseRecnum(String value) {
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     // Monta a árvore de estrutura (item pai + itens filhos recursivamente),
@@ -154,12 +188,35 @@ public class ItemService {
         }
 
         // Agrupa as ligações por item pai, preservando a ordem (SEQ) já aplicada no ORDER BY
-        Map<String, List<Edge>> filhosPorPai = new LinkedHashMap<>();
+        Map<String, List<Edge>> filhosPorPaiBruto = new LinkedHashMap<>();
         for (Edge e : edges) {
-            filhosPorPai.computeIfAbsent(e.itemPai, k -> new ArrayList<>()).add(e);
+            filhosPorPaiBruto.computeIfAbsent(e.itemPai, k -> new ArrayList<>()).add(e);
+        }
+
+        // A FICHABAS costuma ter uma linha por peça física (ex.: 4 gavetas
+        // iguais viram 4 linhas do mesmo item filho). Para a árvore não repetir
+        // o mesmo item (e sua subárvore inteira) várias vezes seguidas,
+        // consolida irmãos com o mesmo código somando as quantidades.
+        Map<String, List<Edge>> filhosPorPai = new LinkedHashMap<>();
+        for (Map.Entry<String, List<Edge>> entry : filhosPorPaiBruto.entrySet()) {
+            filhosPorPai.put(entry.getKey(), consolidarIrmaos(entry.getValue()));
         }
 
         return construirNo(codigo, null, metaPorCodigo, filhosPorPai);
+    }
+
+    private static List<Edge> consolidarIrmaos(List<Edge> irmaos) {
+        Map<String, Edge> porItemFilho = new LinkedHashMap<>();
+        for (Edge e : irmaos) {
+            Edge existente = porItemFilho.get(e.itemFilho);
+            if (existente == null) {
+                porItemFilho.put(e.itemFilho, e);
+            } else {
+                existente.qtdeBruta += e.qtdeBruta;
+                existente.qtdeLiquida += e.qtdeLiquida;
+            }
+        }
+        return new ArrayList<>(porItemFilho.values());
     }
 
     private ItemNodeDTO construirNo(String codigoItem, Edge vinculo, Map<String, ItemMeta> metas,

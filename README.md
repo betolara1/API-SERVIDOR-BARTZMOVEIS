@@ -8,8 +8,13 @@
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4.2-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![IBM DB2](https://img.shields.io/badge/IBM_DB2-12.1-052FAD?style=for-the-badge&logo=ibm&logoColor=white)](https://www.ibm.com/products/db2)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-[![JWT Auth](https://img.shields.io/badge/Auth-JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)](#-segurança)
+[![JWT Auth](https://img.shields.io/badge/Auth-JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)](#-modelo-de-segurança--autenticação-jwt)
 [![Swagger](https://img.shields.io/badge/Swagger-OpenAPI_3-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://swagger.io/)
+[![JUnit 5](https://img.shields.io/badge/JUnit-5-25A162?style=for-the-badge&logo=junit5&logoColor=white)](https://junit.org/junit5/)
+
+---
+
+*Uma camada anticorrupção (ACL) de alta performance desenvolvida para conectar soluções modernas ao ERP legado IBM DB2, garantindo consultas de catálogo, estrutura de itens EPM019 e autenticação segura via REST API.*
 
 </div>
 
@@ -18,167 +23,245 @@
 ## 📸 Preview (Swagger UI)
 
 <div align="center">
-  <img src="images/swagger-v4.png" alt="Swagger UI Preview" width="100%">
+  <img src="images/swagger-v4.png" width="100%" alt="Swagger UI & OpenAPI 3 Interactive Documentation" />
 </div>
 
 ---
 
-## 📌 Sobre o Projeto
+## 📌 Resumo Executivo & Contexto de Negócio
 
-A **Bartz Móveis ERP API** atua como uma **Camada Anticorrupção (Ponte)** entre o frontend moderno e o sistema ERP legado (IBM DB2). 
+No ecossistema fabril e tecnológico da **Bartz Móveis Planejados**, aplicações modernas (como o **Bartz Analyzer**, portais web de pedidos e sistemas de validação de engenharia) necessitam consultar em tempo real informações críticas do catálogo de produtos, especificações de materiais, siglas de cores e composições de montagem de itens.
 
-Para garantir a máxima performance e simplicidade no acesso aos dados legados, a API utiliza **Spring JDBC (JdbcTemplate)** em vez de um ORM completo. Isso permite consultas SQL nativas otimizadas para o DB2, retornando dados diretamente em DTOs (Data Transfer Objects), eliminando o overhead de gerenciamento de entidades JPA em um cenário de leitura intensiva.
+O sistema de gestão central da fábrica opera sobre um banco de dados **IBM DB2** legado. O uso direto de ferramentas de ORM tradicionais (como JPA/Hibernate) para leitura de estruturas relacionais complexas de grande porte em produção trazia *overhead* desnecessário de gerenciamento de entidades, gargalos de memória e consultas de baixa performance.
 
-Construída com foco em **produção real**, a API incorpora:
+A **Bartz Móveis ERP API** foi desenvolvida como uma **Camada Anticorrupção (Anti-Corruption Layer - ACL) de Missão Crítica**. Ela atua como um microsserviço intermediário de alta performance que utiliza **Spring JDBC (`JdbcTemplate`)** para executar consultas SQL nativas diretamente otimizadas para a engine do IBM DB2. 
 
-- ✅ **Arquitetura Simplificada** (Controller → Service → JdbcTemplate)
-- ✅ **Segurança Stateless** via JWT (Pacote Modular `jwt-package`)
-- ✅ **Consultas Nativas** otimizadas para IBM DB2
-- ✅ **Consulta Estrutural Hierárquica (Árvore de Itens / EPM019)**
-- ✅ **Containerização completa** com Docker e Docker Compose
-- ✅ **Documentação interativa** com Swagger / OpenAPI 3
-- ✅ **Monitoramento de Saúde** via Spring Boot Actuator
-- ✅ **Suíte de testes** abrangente (Controllers e Services)
-- ✅ **Tratamento Global de Erros** padronizado
+A API expõe dados limpos, sanitizados e fortemente tipados em **DTOs (Data Transfer Objects)** via JSON, protegidos por autenticação **JWT Stateless**, garantindo sub-milissegundos de tempo de resposta para os sistemas de chão de fábrica.
 
 ---
 
-## 🏛️ Arquitetura
+## ⚙️ Arquitetura de Software & Design Patterns
 
-### Fluxo de Dados (Stateless)
+A aplicação foi projetada seguindo padrões modernos de arquitetura backend, visando **desempenho extremo, isolamento de responsabilidades e segurança stateless**.
 
 ```mermaid
-flowchart TB
-  subgraph Application
-    Auth["AuthController"] --> Jwt["JwtUtil"]
-    A1["ItemController"] --> B1["ItemService"]
-    A2["CorController"] --> B2["CorService"]
-    B1 --> C1["JdbcTemplate"]
-    B2 --> C1
-    C1 --> D["IBM DB2 Database"]
-  end
+graph TD
+    subgraph ClientLayer ["📱 Clientes Frontend & Integradores"]
+        A["Bartz Analyzer / Web Apps / ERP Clients"] -->|HTTP REST + Bearer JWT| B["Spring Boot REST API (:8081)"]
+    end
+
+    subgraph SecurityLayer ["🔐 Segurança Stateless (JWT Package)"]
+        B --> C["JwtAuthFilter"]
+        C -->|Validar Bearer Token| D{"Token Válido?"}
+        D -->|Não| E["HTTP 401 Unauthorized"]
+        D -->|Sim| F["SecurityContextHolder"]
+    end
+
+    subgraph ControllerLayer ["📡 Processo REST (Controllers Layer)"]
+        F --> G["AuthController /auth/login"]
+        F --> H["ItemController /itens"]
+        F --> I["CorController /cores"]
+        F --> J["ActuatorController /actuator/health"]
+    end
+
+    subgraph ServiceLayer ["🧩 Camada de Serviços & DTOs"]
+        G --> K["JwtUtil / Autenticação BCrypt"]
+        H --> L["ItemService (Exato, Parcial, Código de Barras, Árvore EPM019)"]
+        I --> M["CorService (Busca por Sigla & Descrição)"]
+    end
+
+    subgraph DataLayer ["💾 Conexão Nativa IBM DB2 (Data Layer)"]
+        L --> N["Spring JdbcTemplate"]
+        M --> N
+        N -->|SQL Native Queries| O["IBM DB2 Database (v12.1)"]
+        O -->|Mapping ResultSets| P["Data Transfer Objects (ItemDTO, CorDTO, ItemNodeDTO)"]
+    end
 ```
 
-### Estrutura de Pastas
+### 🏢 Decisões Arquiteturais de Destaque
 
-```
-📦 apigetitem
- ├── 🔐 security/            # Filtros de segurança (JWT-Package)
- ├── ⚙️ config/              # Configurações de Segurança, CORS e Swagger
- ├── 📡 controller/          # Endpoints REST (Auth, Item, Cor)
- ├── 🧩 service/             # Regras de negócio e Consultas SQL (JdbcTemplate)
- ├── 📤 dto/                 # Data Transfer Objects (ItemDTO, CorDTO, ItemNodeDTO, LoginDTO)
- └── ⚠️ exceptions/          # Tratamento global de erros (GlobalExceptionHandler)
-```
+* **Camada Anticorrupção (ACL Pattern):** Isola os sistemas consumidores da complexidade e peculiaridades de nomenclatura do banco de dados relacional legado DB2.
+* **Spring JDBC (`JdbcTemplate`):** Em substituição ao Hibernate/JPA, permitindo mapeamento direto de `ResultSet` para DTOs imutáveis, eliminando problemas de *N+1 queries*, *dirty checking* e *lazy loading overhead*.
+* **Arquitetura Simplificada & Limpa:** Organizada estritamente no fluxo `Controller → Service → JdbcTemplate`, promovendo legibilidade, testabilidade unitária e baixíssima manutenção.
+* **Mapeamento de Estrutura Hierárquica (`EPM019`):** Algoritmo de montagem recursiva para transformação de registros planos de componentes (`ITEM_PAI` e `ITEM_FILHO`) em árvores de produtos (`ItemNodeDTO`).
 
 ---
 
-## 🚀 Endpoints da API
+## ⚡ Endpoints da API em Detalhes
 
 ### 🔑 Autenticação (`/auth`)
-| Método | Endpoint | Parâmetros Query | Descrição | Auth |
-|--------|----------|------------------|-----------|------|
-| `GET` | `/auth/login` | `username`, `password` | Autenticação via Query Params (retorna o Token JWT) | ❌ |
 
-### 📦 Itens (`/itens`)
-| Método | Endpoint | Parâmetros Query | Descrição | Auth |
-|--------|----------|------------------|-----------|------|
-| `GET` | `/itens` | - | Lista todos os itens | ✅ |
-| `GET` | `/itens/search` | `codigo` | Busca por código (parcial/exato) | ✅ |
-| `GET` | `/itens/search` | `descricao` | Busca por descrição (parcial/exato) | ✅ |
-| `GET` | `/itens/search` | `codigoBarras` | Busca por código de barras | ✅ |
-| `GET` | `/itens/estrutura` | `codigo` | Retorna a estrutura hierárquica em árvore do item (EPM019) | ✅ |
-
-### 🎨 Cores (`/cores`)
-| Método | Endpoint | Parâmetros Query | Descrição | Auth |
-|--------|----------|------------------|-----------|------|
-| `GET` | `/cores` | - | Lista todas as cores | ✅ |
-| `GET` | `/cores/search` | `codigo` | Busca por sigla/código | ✅ |
-| `GET` | `/cores/search` | `descricao` | Busca por descrição | ✅ |
-
-### 🏥 Monitoramento (`/actuator`)
-| Método | Endpoint | Parâmetro | Descrição | Auth |
-|--------|----------|-----------|-----------|------|
-| `GET` | `/actuator/health` | - | Verificação de integridade/saúde da API | ❌ |
+| Método | Endpoint | Parâmetros Query | Descrição | Auth | Resposta (DTO) |
+| :--- | :--- | :--- | :--- | :---: | :--- |
+| `GET` | `/auth/login` | `username`, `password` | Autentica usuário administrativo e gera token JWT | ❌ | `String` (Token JWT) |
 
 ---
 
-## 🔐 Segurança
+### 📦 Catálogo de Itens & Estruturas (`/itens`)
 
-A autenticação é baseada em **JWT (JSON Web Token)** de forma totalmente Stateless, utilizando o pacote modular `jwt-package`.
-
-### Como obter o Token
-Envie uma requisição `GET` para `/auth/login` com as credenciais administrativas configuradas no `.env`.
-
-**Exemplo:**
-```http
-GET /auth/login?username=seu_usuario&password=sua_senha
-```
-
-**Resposta:**
-```text
-eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzZXVfdXN1YXJpbyIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwMDQzMjAwfQ...
-```
-
-### Uso do Token
-Em todas as requisições protegidas, inclua o token no cabeçalho HTTP:
-
-**Header Obrigatório:**
-```http
-Authorization: Bearer <seu_token_jwt>
-```
-
-**Fluxo Interno:**
-1. O `JwtAuthFilter` intercepta a requisição.
-2. Valida o token usando a `jwt.secret-key` definida no `.env`.
-3. Se válido, libera o acesso às consultas ao DB2.
-4. Se inválido ou expirado, retorna `401 Unauthorized`.
+| Método | Endpoint | Parâmetros Query | Descrição | Auth | Resposta (DTO) |
+| :--- | :--- | :--- | :--- | :---: | :--- |
+| `GET` | `/itens` | - | Lista todos os itens cadastrados no ERP | ✅ | `List<ItemDTO>` |
+| `GET` | `/itens/search` | `codigo` | Busca exata ou parcial de item por código | ✅ | `List<ItemDTO>` |
+| `GET` | `/itens/search` | `descricao` | Busca exata ou parcial por descrição de produto | ✅ | `List<ItemDTO>` |
+| `GET` | `/itens/search` | `codigoBarras` | Busca direta de item pelo Código de Barras EAN | ✅ | `List<ItemDTO>` |
+| `GET` | `/itens/estrutura` | `codigo` | Retorna a estrutura hierárquica em árvore do item (EPM019) | ✅ | `ItemNodeDTO` |
 
 ---
 
-## 🧪 Testes
+### 🎨 Tabela de Cores & Fitas (`/cores`)
 
-A API possui cobertura de testes automatizados com JUnit 5 e Mockito:
+| Método | Endpoint | Parâmetros Query | Descrição | Auth | Resposta (DTO) |
+| :--- | :--- | :--- | :--- | :---: | :--- |
+| `GET` | `/cores` | - | Lista todas as cores e acabamentos do ERP | ✅ | `List<CorDTO>` |
+| `GET` | `/cores/search` | `codigo` | Busca de cor por sigla/código de referência | ✅ | `List<CorDTO>` |
+| `GET` | `/cores/search` | `descricao` | Busca de cor por descrição técnica | ✅ | `List<CorDTO>` |
 
-| Camada | Ferramenta | Classes de Teste |
-|--------|------------|-----------------|
-| **Service (Unit)** | JUnit 5 + Mockito | `BartzErpServiceTest`, `CorServiceTest` |
-| **Controller (Integration)** | `@WebMvcTest` + MockMvc | `BartzErpControllerTest`, `CorControllerTest` |
+---
+
+### 🏥 Monitoramento & Diagnóstico (`/actuator`)
+
+| Método | Endpoint | Parâmetro | Descrição | Auth | Resposta |
+| :--- | :--- | :--- | :--- | :---: | :--- |
+| `GET` | `/actuator/health` | - | Checagem de integridade e status de saúde da API | ❌ | `{"status": "UP"}` |
+
+---
+
+## 🔐 Modelo de Segurança & Autenticação JWT
+
+A segurança da API é gerida pelo módulo customizado `jwt-package`, operando de forma totalmente **Stateless**.
+
+```
+[ Cliente HTTP ] --(1) GET /auth/login?username=X&password=Y --> [ AuthController ]
+                                                                       |
+[ Cliente HTTP ] <--(2) Retorna Token JWT (String Base64) -------------+
+       |
+       +--(3) GET /itens/estrutura (Header: Authorization: Bearer <Token>) --> [ JwtAuthFilter ]
+                                                                                      |
+[ Resposta JSON ] <--(4) Retorna Dados do DB2 se Token for Válido ---------------------+
+```
+
+### Como Utilizar:
+
+1. **Obtenção do Token:** Envie requisição `GET` para `/auth/login` com as credenciais configuradas no arquivo `.env`.
+2. **Cabeçalho de Requisição:** Em todas as chamadas subsequentes aos endpoints protegidos, envie o token no header HTTP:
+   ```http
+   Authorization: Bearer <seu_token_jwt>
+   ```
+3. **Validação Autônoma:** O filtro `JwtAuthFilter` intercepta a requisição, valida a assinatura HMAC utilizando a `jwt.secret-key` e concede o acesso sem necessidade de consultas ao banco para checagem de sessão.
+
+---
+
+## 📊 Mapeamento de Entidades Legadas (IBM DB2)
+
+A API abstrai a complexidade do banco relacional **IBM DB2 v12.1**, mapeando as tabelas legadas do sistema ERP:
+
+| Tabela DB2 | Descrição da Entidade | Mapeamento no DTO |
+| :--- | :--- | :--- |
+| **`ITEM`** | Cadastro principal de produtos, peças e matérias-primas | `ItemDTO` (`codigo`, `descricao`, `refComercial`) |
+| **`COR`** | Cadastro de siglas, fitas de borda e padrões de acabamento | `CorDTO` (`siglaCor`, `descricao`) |
+| **`FICHABAS` / `EPM019`** | Tabela de composição estrutural e engenharia de produto | `ItemNodeDTO` (`codigo`, `descricao`, `filhos[]`) |
+
+---
+
+## 🏛️ Estrutura do Código Fonte
+
+```
+📦 BartzMoveisERP (apigetitem)
+ ├── 📜 pom.xml                      # Dependências Maven (Spring Boot 3.4.2, DB2 Driver, JWT)
+ ├── 🐳 Dockerfile                   # Build multi-stage para containerização Docker
+ ├── 🐳 docker-compose.yml           # Subida simplificada da aplicação e variáveis de ambiente
+ ├── 📂 src/main/java/bartzmoveis/apigetitem/
+ │    ├── 🚀 ApigetitemApplication.java # Entry-point da aplicação Spring Boot
+ │    ├── ⚙️ config/                 # Configurações de Segurança, CORS e Swagger OpenAPI 3
+ │    │    ├── 🌐 CorsConfig.java    # Mapeamento de permissões CORS para requisições cross-origin
+ │    │    ├── 🔐 SecurityConfig.java# Configuração Spring Security & Filtro JWT Interceptor
+ │    │    └── 📖 SwaggerConfig.java # Customização de metadados do Swagger UI e esquemas JWT
+ │    ├── 📡 controller/             # Endpoints REST (Auth, Item, Cor)
+ │    │    ├── 🔑 AuthController.java # Autenticação administrativa e emissão de tokens JWT
+ │    │    ├── 🎨 CorController.java  # Consultas de tabela de cores e siglas de chapas/fitas
+ │    │    └── 📦 ItemController.java # Consultas de itens, código de barras e estrutura EPM019
+ │    ├── 🧩 service/                # Camada de Regras de Negócio e SQL Nativo (JdbcTemplate)
+ │    │    ├── 🎨 CorService.java     # Consultas SQL nativas DB2 para catálogo de cores
+ │    │    └── 📦 ItemService.java    # Consultas SQL e construção da árvore hierárquica EPM019
+ │    └── 📤 dto/                    # Data Transfer Objects (Respostas Imutáveis)
+ │         ├── 🎨 CorDTO.java         # Mapeamento de Sigla e Descrição de Cor
+ │         ├── 📦 ItemDTO.java        # Mapeamento de Código, Descrição e Referência Comercial
+ │         ├── 🌳 ItemNodeDTO.java    # Estrutura em árvore de itens pai e filho (EPM019)
+ │         └── 🔐 LoginDTO.java       # DTO para recebimento de credenciais de login
+ └── 📂 src/test/java/bartzmoveis/apigetitem/ # Suíte de testes automatizados (JUnit 5 + Mockito)
+      ├── 📡 controller/             # Testes de integração de endpoints REST (@WebMvcTest)
+      └── 🧩 service/                # Testes unitários da camada de serviço e JdbcTemplate
+```
+
+---
+
+## 💻 Instalação & Desenvolvimento
+
+### Pré-requisitos
+
+* **Java JDK** `21` (LTS) ou superior
+* **Maven** `3.9` ou superior (ou utilizar o Maven Wrapper `./mvnw` incluso)
+* Acesso à rede/instância do banco de dados **IBM DB2**
+
+### Passos para Execução Local
 
 ```bash
-# Executar todos os testes
-./mvnw test
-```
+# 1. Clonar o repositório
+git clone https://github.com/betolara1/API-Bartz-Moveis-ERP.git
+cd API-Bartz-Moveis-ERP
 
----
+# 2. Configurar o arquivo .env ou variáveis de ambiente com as credenciais do DB2
+# (Veja a seção "Rodando com Docker" para o modelo de arquivo .env)
 
-## 💻 Executando Localmente (Desenvolvimento)
-
-Para executar a aplicação em modo de desenvolvimento local via Maven Wrapper:
-
-```bash
-# Baixar dependências e rodar a aplicação
+# 3. Baixar dependências e executar a aplicação via Maven Wrapper
 ./mvnw spring-boot:run
 ```
 
+---
+
+## 📦 Como Gerar o Executável (.jar)
+
+Para compilar o projeto e empacotar o executável Java otimizado para produção:
+
 ```bash
-# Para gerar o arquivo .JAR
+# Compilar e gerar o arquivo JAR na pasta /target
 ./mvnw clean package -DskipTests
 ```
 
+O artefato gerado estará disponível em `target/apigetitem-0.0.1-SNAPSHOT.jar`.
+
 ---
 
-## 🐳 Rodando com Docker (Produção)
+## 🧪 Suíte de Testes & Qualidade de Código
 
-**1. Configure o arquivo `.env`:**
+A qualidade das rotas REST e das consultas de serviço é garantida por testes unitários e de integração utilizando **JUnit 5** e **Mockito**.
+
+```bash
+# Executar toda a suíte de testes automatizados
+./mvnw test
+```
+
+### Escopo dos Testes:
+* **`CorServiceTest` & `BartzErpServiceTest`:** Validação unitária do comportamento dos serviços e mapeamentos `JdbcTemplate`.
+* **`CorControllerTest` & `BartzErpControllerTest`:** Testes de integração das rotas HTTP com `@WebMvcTest` e chamadas mockadas via `MockMvc`.
+
+---
+
+## 🐳 Execução em Produção via Docker
+
+A aplicação conta com arquivo `Dockerfile` otimizado em múltiplos estágios (*multi-stage build*) e `docker-compose.yml` para implantação em containers.
+
+### 1. Criar o Arquivo `.env` na Raiz do Projeto:
+
 ```env
 # Segurança JWT
 jwt.secret-key=sua_chave_secreta_com_no_minimo_32_chars
 jwt.excluded-paths=/auth/login, /swagger-ui/**, /v3/api-docs/**
 jwt.expiration-time=43200000
 
-# Conexão DB2
-URL_DB=jdbc:db2://seu_host:50000/nomedobanco
+# Conexão IBM DB2
+URL_DB=jdbc:db2://seu_host_db2:50000/nomedobanco
 USERNAME_DB=usuario_db2
 PASSWORD_DB=senha_db2
 
@@ -190,60 +273,57 @@ PASSWORD_LOGIN=sua_senha_criptografada_bcrypt
 DB_PORT=8081
 ```
 
-**2. Suba o container:**
+### 2. Inicializar os Containers:
+
 ```bash
+# Subir a aplicação containerizada em segundo plano
 docker-compose up --build -d
 ```
 
 ---
 
-## 📖 Documentação Interativa (Swagger)
+## 📖 Documentação Interativa (Swagger / OpenAPI 3)
 
-Acesse: `http://localhost:{PORTA}/swagger-ui.html`
+Com a aplicação em execução, acesse no navegador:
 
-A documentação permite testar todos os endpoints. Lembre-se de clicar em **Authorize** e fornecer o token JWT (`Bearer <token>`) para chamadas aos endpoints protegidos.
+```text
+http://localhost:8081/swagger-ui.html
+```
 
----
-
-## 📊 Estrutura de Dados (DB2)
-
-A API mapeia as seguintes informações do banco legado:
-
-- **Tabela `ITEM`**: Campos `ITEM` (Código), `DESCRICAO` e `REF_COMERCIAL`.
-- **Tabela `COR`**: Campos `SIGLA_COR` e `DESCRICAO`.
-- **Tabela `FICHABAS`**: Estrutura e composição hierárquica de produtos (`ITEM_PAI` / `ITEM_FILHO`).
+A interface do **Swagger UI** permite testar interativamente todas as requisições. Lembre-se de autenticar no botão **Authorize** informando o cabeçalho `Bearer <seu_token_jwt>` gerado pelo endpoint `/auth/login`.
 
 ---
 
 ## 🛠️ Stack Tecnológica
 
-| Tecnologia | Versão | Finalidade |
-|-----------|--------|------------|
-| Java | 21 (LTS) | Linguagem principal |
-| Spring Boot | 3.4.2 | Framework web e IoC |
-| Spring JDBC | — | Acesso a dados via JdbcTemplate |
-| Spring Security | 6.4.x | Controle de acesso via JWT |
-| Spring Boot Actuator | 3.4.2 | Endpoint de integridade e monitoramento (`/actuator/health`) |
-| JWT Package | 1.0.4 | Pacote customizado para gestão de tokens |
-| IBM DB2 | 12.1 | Banco de dados legado |
-| SpringDoc OpenAPI | 2.3.0 | Documentação Swagger |
-| Lombok | — | Redução de boilerplate |
-| Docker + Compose | — | Containerização |
-| JUnit 5 + Mockito | — | Testes automatizados |
-| Maven | 3.9+ | Gerenciamento de build |
+| Categoria | Tecnologia | Versão | Aplicação |
+| :--- | :--- | :--- | :--- |
+| **Linguagem** | **Java** | `21 (LTS)` | Linguagem principal de desenvolvimento |
+| **Framework Core** | **Spring Boot** | `3.4.2` | Framework base para microsserviço backend |
+| **Acesso a Dados** | **Spring JDBC** | `3.4.2` | Consultas nativas otimizadas via `JdbcTemplate` |
+| **Segurança** | **Spring Security** | `6.4.x` | Controle de acesso HTTP e filtros de segurança |
+| **Autenticação** | **JWT Package** | `1.0.4` | Gestão e validação modular de tokens JWT |
+| **Banco de Dados** | **IBM DB2** | `12.1` | Banco de dados relacional legado corporativo |
+| **Documentação** | **SpringDoc OpenAPI** | `2.3.0` | Geração automática da documentação Swagger UI |
+| **Diagnóstico** | **Spring Boot Actuator** | `3.4.2` | Endpoints de saúde e telemetria (`/actuator/health`) |
+| **Testes Unitários** | **JUnit 5 / Mockito** | `5.x` | Suíte de testes automatizados de unidade e integração |
+| **Containerização** | **Docker / Compose** | `Latest` | Empacotamento em container e orquestração de produção |
+| **Build Tool** | **Maven** | `3.9+` | Gerenciador de dependências e automação de build |
 
 ---
 
-## 👨‍💻 Autor
+## 👨‍💻 Autor & Engenharia de Desenvolvimento
 
-Desenvolvido por **Roberto Lara** — Backend Developer
+Desenvolvido por **Roberto Lara** — *Backend Developer*
 
-[![GitHub](https://img.shields.io/badge/GitHub-robertolara-181717?style=for-the-badge&logo=github)](https://github.com/betolara1)
+[![GitHub](https://img.shields.io/badge/GitHub-betolara1-181717?style=for-the-badge&logo=github)](https://github.com/betolara1)
 
 ---
 
 <div align="center">
 
-**Bartz Móveis ERP API** — A ponte segura e performática para seus dados legados.
+**Bartz Móveis ERP API** — *A Ponte Segura e Performática para Integração de Dados Legados.*
+
+> **Nota:** Este projeto utiliza o agente de inteligência artificial **Antigravity** (Google DeepMind) para aceleração de desenvolvimento, arquitetura de microsserviços, documentação técnica e conformidade com boas práticas de engenharia de software.
 
 </div>
